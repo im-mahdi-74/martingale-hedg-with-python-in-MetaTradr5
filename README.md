@@ -1,3 +1,8 @@
+
+
+![hedging-martingale-tunnel-ea-screen-3079](https://github.com/im-mahdi-74/martingale-hedg-with-python-in-MetaTradr5/assets/88947901/1ab2cfb1-d8e2-4596-9ab1-ce7513123c21)
+
+
 Forex Trading System with Martingale Hedge Strategy
 
 This forex trading system is designed to implement the Martingale Hedge strategy on the MetaTrader 5 platform.
