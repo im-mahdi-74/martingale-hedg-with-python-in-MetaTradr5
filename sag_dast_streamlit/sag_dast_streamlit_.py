@@ -74,7 +74,6 @@ class Main():
         return df
 
 
-
     def buy( self , symbol , lot , tp_ , sl_  , price):
 
         
@@ -182,19 +181,17 @@ class Main():
     def sell_stop( self , symbol , lot , tp_ , sl_ , reward , price):
         
         
-        tp = abs(  self.symbol[symbol]  - tp_ - reward ) 
+        tp = abs(  self.symbol[symbol]  - tp_  ) 
         sl = abs(  self.symbol[symbol]  ) 
         pos = mt5.ORDER_TYPE_SELL_STOP
 
 
 
 
-
-
-
         lot = self.round_up(lot, 2)
         point = mt5.symbol_info(symbol).point
-        price =   self.symbol[symbol]  - ( sl_)
+        # price =   self.symbol[symbol]  - ( sl_)
+        price = price
         deviation = 100
         request = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -236,7 +233,7 @@ class Main():
 
     def buy_stop( self , symbol , lot , tp_ , sl_  , reward , price):
         
-        tp = abs(  self.symbol[symbol]  + tp_ + reward) 
+        tp = abs(  self.symbol[symbol]  + tp_ ) 
         sl = abs(  self.symbol[symbol]   ) 
         pos = mt5.ORDER_TYPE_BUY_STOP
         
@@ -249,7 +246,8 @@ class Main():
 
         lot = self.round_up(lot, 2)
         point = mt5.symbol_info(symbol).point
-        price =   self.symbol[symbol]  + ( sl_)
+        # price =   self.symbol[symbol]  + ( sl_)
+        price = price
         deviation = 100
         request = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -361,10 +359,10 @@ class Main():
                     sell_init = False
                     buy_init = True
                     lot = lot + (lot * zareb)
-                    log , doit = self.sell_stop( symbol, lot ,  tp ,  sl , sl , price )   
+                    log , doit = self.sell_stop( symbol, lot ,  tp + sl ,  sl , sl , self.symbol[symbol] - sl )   
                     while True : 
                         if not doit:
-                            log , doit = self.sell_stop( symbol, lot ,  tp ,  sl , sl , price  ) 
+                            log , doit = self.sell_stop( symbol, lot ,  tp + sl  ,  sl , sl , self.symbol[symbol] - sl  ) 
                             continue
                         else : 
                             time.sleep(0.1)
@@ -381,10 +379,10 @@ class Main():
                     buy_init = False
                     sell_init = True
                     lot = lot + (lot * zareb)
-                    log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl  , price )
+                    log , doit = self.buy_stop( symbol, lot ,  tp  ,  sl , sl  , self.symbol[symbol] )
                     while True : 
                         if not doit:
-                            log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl  , price ) 
+                            log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl  , self.symbol[symbol] ) 
                             continue
                         else : 
                             time.sleep(0.1)
@@ -476,10 +474,10 @@ class Main():
                     sell_init = False
                     buy_init = True
                     lot = lot + (lot * zareb)
-                    log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl  , price )   
+                    log , doit = self.buy_stop( symbol, lot ,  tp + sl  ,  sl , sl  , price + sl  )   
                     while True : 
                         if not doit:
-                            log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl , price  ) 
+                            log , doit = self.buy_stop( symbol, lot ,  tp + sl  ,  sl , sl , price  + sl ) 
                             continue
                         else : 
                             time.sleep(0.1)
@@ -497,10 +495,10 @@ class Main():
                     buy_init = False
                     sell_init = True
                     lot = lot + (lot * zareb)
-                    log , doit = self.sell_stop( symbol, lot ,  tp ,  sl , sl  , price )
+                    log , doit = self.sell_stop( symbol, lot ,  tp,  sl , sl  , self.symbol[symbol] )
                     while True : 
                         if not doit:
-                            log , doit = self.sell_stop( symbol, lot ,  tp ,  sl , sl  , price ) 
+                            log , doit = self.sell_stop( symbol, lot ,  tp,  sl , sl  , self.symbol[symbol] ) 
                             continue
                         else : 
                             time.sleep(0.1)
@@ -516,10 +514,6 @@ class Main():
                     self.order_close(symbol)
                     break
                 
-
-
-            
-
 
     def close( self , symbol):
         
@@ -587,113 +581,6 @@ class Main():
                 if result.retcode == 10009 :
 
                     return  True
-
-
-
-    def scalping_strategy( self , symbol,  per, mult):
-        df = self.get_data(symbol, mt5.TIMEFRAME_M1)
-        # df = calculate_indicators(df)
-        df = self.calculate_indicators_(df ,  per, mult)
-
-        for i in range(1, len(df)):
-            if i == len(df) -1 :
-            # buy_signal = (df['close'][i] > df['lower_band'][i]) and (df['rsi'][i] > 30) and (df['macd'][i] > df['signal'][i]) and (df['sma_short'][i] > df['sma_long'][i])
-            # sell_signal = (df['close'][i] < df['upper_band'][i]) and (df['rsi'][i] < 70) and (df['macd'][i] < df['signal'][i]) and (df['sma_short'][i] < df['sma_long'][i])
-
-                # buy_signal = (df['close'][i] < df['lower_band'][i]) and (df['rsi'][i] < 30) 
-                # sell_signal = (df['close'][i] > df['upper_band'][i]) and (df['rsi'][i] > 70) 
-
-                # buy_signal = (df['rsi'][i] < 30) 
-                # sell_signal =  (df['rsi'][i] > 70) 
-
-
-                buy_signal = df['long_condition'][i]
-                sell_signal = df['short_condition'][i]
-
-
-
-
-
-                if buy_signal:
-                    return 'buy' , mt5.symbol_info_tick(symbol).bid
-                    # Place a buy order here
-                else :
-                    print(f'not buy segnal for {symbol}') 
-
-
-                if sell_signal:
-                    return 'sell' , mt5.symbol_info_tick(symbol).ask
-                else:
-                    print(f'not sell segnal for {symbol}') 
-            
-
-
-    def run( self , ):
-        while True:
-            now = datetime.datetime.now(tehran_timezone)
-            if 9 < now.hour < 22 :
-                try:
-                    gbp_per, gbp_mult = 50, 1
-                    gbp = self.scalping_strategy('GBPUSD_o' , gbp_per, gbp_mult)
-                    if gbp is not None:
-                        gbp_signal , gbp_price = gbp
-                    
-                        if gbp_signal == 'buy' and len(mt5.positions_get(symbol='GBPUSD_o')) == 0:
-                            th.Thread(target=self.trade_up, args=('GBPUSD_o', 0.1, 0.0005, 0.0002 , 3 , gbp_price)).start()
-                        if gbp_signal == 'sell' and len(mt5.positions_get(symbol='GBPUSD_o')) == 0:
-                            th.Thread(target=self.trade_down, args=('GBPUSD_o', 0.1, 0.0005, 0.0002 , 3 , gbp_price)).start()
-                    time.sleep(1)
-
-                    gbp_per, gbp_mult = 50, 1
-                    jpy = self.scalping_strategy('USDJPY_o' , gbp_per, gbp_mult)
-                    if jpy is not None:
-                        jpy_signal , jpy_price = self.scalping_strategy('USDJPY_o' ,  gbp_per, gbp_mult)
-                        if jpy_signal == 'buy' and len(mt5.positions_get(symbol='USDJPY_o')) == 0:
-                            th.Thread(target=self.trade_up, args=('USDJPY_o', 0.1, 0.05, 0.02 , 3 , jpy_price)).start()
-                        if jpy_signal == 'sell' and len(mt5.positions_get(symbol='USDJPY_o')) == 0:
-                            th.Thread(target=self.trade_down, args=('USDJPY_o', 0.1, 0.05, 0.02 , 3 , jpy_price)).start()
-                    time.sleep(1)
-
-                    gbp_per, gbp_mult = 50, 1
-                    chf = self.scalping_strategy('USDCHF_o' , gbp_per, gbp_mult)
-                    if chf is not None:
-                        chf_signal , chf_price = chf
-                        if chf_signal == 'buy' and len(mt5.positions_get(symbol='USDCHF_o')) == 0:
-                            th.Thread(target=self.trade_up, args=('USDCHF_o', 0.1, 0.0005, 0.0002 , 3 , chf_price)).start()
-                        if chf_signal == 'sell' and len(mt5.positions_get(symbol='USDCHF_o')) == 0:
-                            th.Thread(target=self.trade_down, args=('USDCHF_o', 0.1, 0.0005, 0.0002 , 3 , chf_price)).start()
-                    time.sleep(1)
-
-                    # aud_signal = scalping_strategy('AUDUSD_o')
-                    # if aud_signal == 'buy' and len(mt5.positions_get(symbol='AUDUSD_o')) == 0:
-                    #     th.Thread(target=trade_up, args=('AUDUSD_o', 0.01, 0.0005, 0.0006)).start()
-                    # if aud_signal == 'sell' and len(mt5.positions_get(symbol='AUDUSD_o')) == 0:
-                    #     th.Thread(target=trade_down, args=('AUDUSD_o', 0.01, 0.0005, 0.0006)).start()
-                    # time.sleep(1)
-
-                    # nzd_signal = scalping_strategy('NZDUSD_o')
-                    # if nzd_signal == 'buy' and len(mt5.positions_get(symbol='NZDUSD_o')) == 0:
-                    #     th.Thread(target=trade_up, args=('NZDUSD_o', 0.01, 0.0005, 0.0006)).start()
-                    # if nzd_signal == 'sell' and len(mt5.positions_get(symbol='NZDUSD_o')) == 0:
-                    #     th.Thread(target=trade_down, args=('NZDUSD_o', 0.01, 0.0005, 0.0006)).start()
-                    # time.sleep(1)
-
-                    # gbp_per, gbp_mult = 50, 1
-                    # cad_signal = scalping_strategy('USDCAD_o'  , gbp_per, gbp_mult)
-                    # if cad_signal == 'buy' and len(mt5.positions_get(symbol='USDCAD_o')) == 0:
-                    #     th.Thread(target=trade_up, args=('USDCAD_o', 0.1, 0.0005, 0.0002 , 3)).start()
-                    # if cad_signal == 'sell' and len(mt5.positions_get(symbol='USDCAD_o')) == 0:
-                    #     th.Thread(target=trade_down, args=('USDCAD_o', 0.1, 0.0005, 0.0002 , 3)).start()
-                    # time.sleep(1)
-
-
-
-                except Exception as e:
-                    print(f"Error 810: {e}")
-                    time.sleep(60)  # Wait for 1 minute before retrying
-
-
-
 
 
     def load_params_from_json(self , json_file):
