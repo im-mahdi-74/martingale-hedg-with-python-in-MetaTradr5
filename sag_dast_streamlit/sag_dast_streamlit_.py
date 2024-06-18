@@ -391,16 +391,17 @@ class Main():
 
 
                 
-
-            if  len(mt5.positions_get(symbol=symbol)) == 0 and init_buy   :
-                time.sleep(0.1)
-                if  len(mt5.positions_get(symbol=symbol)) == 0 :
-                    self.order_close(symbol)
-                    break
+            time.sleep(0.1)
+            if mt5.positions_get(symbol=symbol) :
+                if  len(mt5.positions_get(symbol=symbol)) == 0 and init_buy   :
+                    time.sleep(0.1)
+                    if  len(mt5.positions_get(symbol=symbol)) == 0 :
+                        self.order_close(symbol)
+                        break
                 
 
 
-            time.sleep(0.1)
+            
 
 
     def trade_down( self , symbol , lot , tp , sl , reward , price ):
