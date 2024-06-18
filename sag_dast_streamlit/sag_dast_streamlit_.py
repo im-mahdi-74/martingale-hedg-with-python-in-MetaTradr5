@@ -12,7 +12,7 @@ import numpy as np
 import subprocess
 import json
 import os
-
+import sys
 
 
 
@@ -28,6 +28,8 @@ class Main():
         self.init()
 
         self.symbol = {}
+
+        self.price = None
 
 
 
@@ -110,7 +112,7 @@ class Main():
             
         if result.retcode == 10009 :
             self.symbol[symbol] = result.price
-            return ("Done . position #{} closed".format(result)) , True
+            return ("Done . position #{} closed".format(result)) , True , result.price
         # if result:
         #     if result.retcode != mt5.TRADE_RETCODE_DONE:
         #         print("2. order_send failed, retcode={}".format(result.retcode))
@@ -163,7 +165,7 @@ class Main():
             
         if result.retcode == 10009 :
             self.symbol[symbol] = result.price
-            return ("Done . position #{} closed".format(result)) , True
+            return ("Done . position #{} closed".format(result)) , True , result.price
         # if result:
         #     if result.retcode != mt5.TRADE_RETCODE_DONE:
         #         print("2. order_send failed, retcode={}".format(result.retcode))
@@ -181,8 +183,8 @@ class Main():
     def sell_stop( self , symbol , lot , tp_ , sl_ , reward , price):
         
         
-        tp = abs(  self.symbol[symbol]  - tp_  ) 
-        sl = abs(  self.symbol[symbol]  ) 
+        tp =  tp_
+        sl = sl_
         pos = mt5.ORDER_TYPE_SELL_STOP
 
 
@@ -191,7 +193,7 @@ class Main():
         lot = self.round_up(lot, 2)
         point = mt5.symbol_info(symbol).point
         # price =   self.symbol[symbol]  - ( sl_)
-        price = price
+        price = price 
         deviation = 100
         request = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -233,8 +235,8 @@ class Main():
 
     def buy_stop( self , symbol , lot , tp_ , sl_  , reward , price):
         
-        tp = abs(  self.symbol[symbol]  + tp_ ) 
-        sl = abs(  self.symbol[symbol]   ) 
+        tp = tp_
+        sl = sl_
         pos = mt5.ORDER_TYPE_BUY_STOP
         
 
@@ -247,7 +249,7 @@ class Main():
         lot = self.round_up(lot, 2)
         point = mt5.symbol_info(symbol).point
         # price =   self.symbol[symbol]  + ( sl_)
-        price = price
+        price = price 
         deviation = 100
         request = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -288,6 +290,7 @@ class Main():
 
 
     def trade_up( self , symbol , lot , tp , sl , reward , price  ):
+        
         zareb = 0.5
         numtrade = 0
         # up_numtrade = 0
@@ -320,89 +323,87 @@ class Main():
         buy_init = False    
         
         while True:
-            time.sleep(0.1)
             
             
+            
+            try :
+                positions_total=len(mt5.positions_get(symbol=symbol))
+                
+                if positions_total == 0:
+                    position_count = 0
+                    
+                
+            
+                    
+                    
+                
+                if   len(mt5.positions_get(symbol=symbol)) == 0 and init_position  :
+                    
+                    
+                    log , doit , price = self.buy( symbol, lot ,  tp ,  sl , price)
+                    sell_init  = True
+                    level_buy_count += 1
+                    position_count += 1
+                    level_vol_buy = lot
+                    level_sell_count = 0
+                    sum_volum = []
+                    sum_volum.append(lot)
+                    init_position = False
+                    init_sell = True
+                    print('Buy', doit , log)
+                    init_buy = True
+                    time.sleep(0.03)
+                    continue
 
-            positions_total=len(mt5.positions_get(symbol=symbol))
-            
-            if positions_total == 0:
-                position_count = 0
-                
-            
-        
-                
-                
-            
-            if   len(mt5.positions_get(symbol=symbol)) == 0 and init_position  :
-                
-                
-                log , doit = self.buy( symbol, lot ,  tp ,  sl , price)
-                sell_init  = True
-                level_buy_count += 1
-                position_count += 1
-                level_vol_buy = lot
-                level_sell_count = 0
-                sum_volum = []
-                sum_volum.append(lot)
-                init_position = False
-                init_sell = True
-                print('Buy', doit , log)
-                init_buy = True
-                time.sleep(0.1)
-                continue
 
 
+                if   len(mt5.positions_get(symbol=symbol)) == 1   :
+                    if mt5.positions_get(symbol=symbol)[0].type == 0 and sell_init : 
+                        sell_init = False
+                        buy_init = True
+                        lot = lot + (lot * zareb)
+                        log , doit = self.sell_stop( symbol, lot , price - sl - tp  , price , sl , price - sl )   
+                        while True : 
+                            if not doit:
+                                log , doit = self.sell_stop( symbol, lot ,  price - sl - tp   , price  , sl , price - sl  ) 
+                                continue
+                            else : 
+                                time.sleep(0.1)
+                                break
+                        
 
-            if   len(mt5.positions_get(symbol=symbol)) == 1   :
-                if mt5.positions_get(symbol=symbol)[0].type == 0 and sell_init : 
-                    sell_init = False
-                    buy_init = True
-                    lot = lot + (lot * zareb)
-                    log , doit = self.sell_stop( symbol, lot ,  tp + sl ,  sl , sl , self.symbol[symbol] - sl )   
-                    while True : 
-                        if not doit:
-                            log , doit = self.sell_stop( symbol, lot ,  tp + sl  ,  sl , sl , self.symbol[symbol] - sl  ) 
-                            continue
-                        else : 
-                            time.sleep(0.1)
-                            break
+
+                        
+
+
+                        
+
+                    if mt5.positions_get(symbol=symbol)[0].type == 1 and buy_init :
+                        buy_init = False
+                        sell_init = True
+                        lot = lot + (lot * zareb)
+                        log , doit = self.buy_stop( symbol, lot , price +  tp  , price - sl , sl  , price )
+                        while True : 
+                            if not doit:
+                                log , doit = self.buy_stop( symbol, lot , price +  tp , price - sl , sl  , price ) 
+                                continue
+                            else : 
+                                time.sleep(0.1)
+                                break
+
                     
 
-
                     
-
-
-                    
-
-                if mt5.positions_get(symbol=symbol)[0].type == 1 and buy_init :
-                    buy_init = False
-                    sell_init = True
-                    lot = lot + (lot * zareb)
-                    log , doit = self.buy_stop( symbol, lot ,  tp  ,  sl , sl  , self.symbol[symbol] )
-                    while True : 
-                        if not doit:
-                            log , doit = self.buy_stop( symbol, lot ,  tp ,  sl , sl  , self.symbol[symbol] ) 
-                            continue
-                        else : 
-                            time.sleep(0.1)
-                            break
-
-
-
                 
-            time.sleep(0.1)
-            if mt5.positions_get(symbol=symbol) :
                 if  len(mt5.positions_get(symbol=symbol)) == 0 and init_buy   :
-                    time.sleep(0.1)
+                    time.sleep(2)
                     if  len(mt5.positions_get(symbol=symbol)) == 0 :
                         self.order_close(symbol)
-                        break
-                
+                        sys.exit()
 
-
-            
-
+            except Exception as e:
+                print(f'Error in trade_up : {e}')
+                         
 
     def trade_down( self , symbol , lot , tp , sl , reward , price ):
         zareb = 0.5
@@ -439,82 +440,88 @@ class Main():
         while True:
             time.sleep(0.1)
             
+            try : 
 
-            positions_total=len(mt5.positions_get(symbol=symbol))
-            
-            if positions_total == 0:
-                position_count = 0
+                positions_total=len(mt5.positions_get(symbol=symbol))
+                
+                if positions_total == 0:
+                    position_count = 0
+                    
                 
             
-        
+                    
+                    
                 
-                
-            
-            if   len(mt5.positions_get(symbol=symbol)) == 0 and init_position  :
-                
-                
-                log , doit = self.sell( symbol, lot ,  tp ,  sl , price )
-                sell_init  = True
-                level_buy_count += 1
-                position_count += 1
-                level_vol_buy = lot
-                level_sell_count = 0
+                if   len(mt5.positions_get(symbol=symbol)) == 0 and init_position  :
+                    
+                    
+                    log , doit , price = self.sell( symbol, lot ,  tp ,  sl , price )
+                    sell_init  = True
+                    level_buy_count += 1
+                    position_count += 1
+                    level_vol_buy = lot
+                    level_sell_count = 0
 
-                init_position = False
-                init_sell = True
+                    init_position = False
+                    init_sell = True
 
-                init_buy = True
-                time.sleep(0.1)
+                    init_buy = True
+                    time.sleep(0.1)
 
-                continue
-
-
-
-            if   len(mt5.positions_get(symbol=symbol)) == 1   :
-                if mt5.positions_get(symbol=symbol)[0].type == 1 and sell_init : 
-                    sell_init = False
-                    buy_init = True
-                    lot = lot + (lot * zareb)
-                    log , doit = self.buy_stop( symbol, lot ,  tp + sl  ,  sl , sl  , price + sl  )   
-                    while True : 
-                        if not doit:
-                            log , doit = self.buy_stop( symbol, lot ,  tp + sl  ,  sl , sl , price  + sl ) 
-                            continue
-                        else : 
-                            time.sleep(0.1)
-                            break 
                     continue
+
+
+
+                if   len(mt5.positions_get(symbol=symbol)) == 1   :
+                    if mt5.positions_get(symbol=symbol)[0].type == 1 and sell_init : 
+                        sell_init = False
+                        buy_init = True
+                        lot = lot + (lot * zareb)
+                        log , doit = self.buy_stop( symbol, lot , price +  tp  + sl  ,  price   , sl  , price + sl )   
+                        while True : 
+                            if not doit:
+                                log , doit = self.buy_stop( symbol, lot ,  price +  tp  + sl  ,  price , sl , price + sl  ) 
+                                continue
+                            else : 
+                                time.sleep(0.1)
+                                break 
+                        continue
+                        
+
+
+                        
+
+
+                        
+
+                    if mt5.positions_get(symbol=symbol)[0].type == 0 and buy_init :
+                        buy_init = False
+                        sell_init = True
+                        lot = lot + (lot * zareb)
+                        log , doit = self.sell_stop( symbol, lot , price -  tp , price +  sl , sl  , price )
+                        while True : 
+                            if not doit:
+                                log , doit = self.sell_stop( symbol, lot , price -  tp,  price +  sl , sl  , price ) 
+                                continue
+                            else : 
+                                time.sleep(0.1)
+                                break
+
+
+
                     
 
+                if  len(mt5.positions_get(symbol=symbol)) == 0 and init_buy   :
+                    time.sleep(2)
+                    if  len(mt5.positions_get(symbol=symbol)) == 0 :
+                        self.order_close(symbol)
 
-                    
-
-
-                    
-
-                if mt5.positions_get(symbol=symbol)[0].type == 0 and buy_init :
-                    buy_init = False
-                    sell_init = True
-                    lot = lot + (lot * zareb)
-                    log , doit = self.sell_stop( symbol, lot ,  tp,  sl , sl  , self.symbol[symbol] )
-                    while True : 
-                        if not doit:
-                            log , doit = self.sell_stop( symbol, lot ,  tp,  sl , sl  , self.symbol[symbol] ) 
-                            continue
-                        else : 
-                            time.sleep(0.1)
-                            break
-
-
+                        sys.exit()
 
                 
+            except Exception as e:
+                print(f'Error in trade_down : {e}')
 
-            if  len(mt5.positions_get(symbol=symbol)) == 0 and init_buy   :
-                time.sleep(0.1)
-                if  len(mt5.positions_get(symbol=symbol)) == 0 :
-                    self.order_close(symbol)
-                    break
-                
 
     def close( self , symbol):
         
