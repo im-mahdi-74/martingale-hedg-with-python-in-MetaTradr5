@@ -112,7 +112,7 @@ class Main():
             
         if result.retcode == 10009 :
             self.symbol[symbol] = result.price
-            return ("Done . position #{} closed".format(result)) , True , result.price
+            return ("Done . position #{} closed".format(result)) , True , price
         # if result:
         #     if result.retcode != mt5.TRADE_RETCODE_DONE:
         #         print("2. order_send failed, retcode={}".format(result.retcode))
@@ -165,7 +165,7 @@ class Main():
             
         if result.retcode == 10009 :
             self.symbol[symbol] = result.price
-            return ("Done . position #{} closed".format(result)) , True , result.price
+            return ("Done . position #{} closed".format(result)) , True , price
         # if result:
         #     if result.retcode != mt5.TRADE_RETCODE_DONE:
         #         print("2. order_send failed, retcode={}".format(result.retcode))
